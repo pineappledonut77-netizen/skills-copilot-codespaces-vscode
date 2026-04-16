@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cell Defender</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        margin: 0 0 8px;
+      }
+      .hud {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      button {
+        background: #2563eb;
+        color: #fff;
+        border: 0;
+        border-radius: 8px;
+        padding: 8px 14px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #1d4ed8;
+      }
+      #board {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .cell {
+        border: 1px solid #334155;
+        border-radius: 10px;
+        aspect-ratio: 1 / 1;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        user-select: none;
+      }
+      .healthy {
+        background: #14532d;
+      }
+      .infected {
+        background: #7f1d1d;
+      }
+      .empty {
+        background: #1e293b;
+      }
+      .status {
+        min-height: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Cell Defender</h1>
+      <p>Protect the organism by clicking healthy cells and avoiding infected ones.</p>
+      <div class="hud">
+        <button id="start">Start</button>
+        <strong>Score: <span id="score">0</span></strong>
+        <strong>Lives: <span id="lives">3</span></strong>
+        <strong>Time: <span id="time">30</span>s</strong>
+      </div>
+      <div class="status" id="status">Press Start to begin.</div>
+      <div id="board"></div>
+    </div>
+
+    <script>
+      const board = document.getElementById('board');
+      const scoreEl = document.getElementById('score');
+      const livesEl = document.getElementById('lives');
+      const timeEl = document.getElementById('time');
+      const statusEl = document.getElementById('status');
+      const startBtn = document.getElementById('start');
+
+      const size = 24;
+      const cells = [];
+      let score = 0;
+      let lives = 3;
+      let timeLeft = 30;
+      let gameLoop = null;
+      let timerLoop = null;
+      let running = false;
+
+      function makeCell() {
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'cell empty';
+        el.textContent = '•';
+        board.appendChild(el);
+        cells.push(el);
+      }
+
+      function render() {
+        scoreEl.textContent = String(score);
+        livesEl.textContent = String(lives);
+        timeEl.textContent = String(timeLeft);
+      }
+
+      function clearTypes() {
+        cells.forEach((c) => {
+          c.className = 'cell empty';
+          c.textContent = '•';
+          c.onclick = null;
+        });
+      }
+
+      function spawnTargets() {
+        clearTypes();
+        const healthyIndex = Math.floor(Math.random() * size);
+        let infectedIndex = Math.floor(Math.random() * size);
+        while (infectedIndex === healthyIndex) {
+          infectedIndex = Math.floor(Math.random() * size);
+        }
+
+        const healthyCell = cells[healthyIndex];
+        healthyCell.className = 'cell healthy';
+        healthyCell.textContent = '+';
+        healthyCell.onclick = () => {
+          if (!running) return;
+          score += 1;
+          render();
+          spawnTargets();
+          scheduleSpawn();
+        };
+
+        const infectedCell = cells[infectedIndex];
+        infectedCell.className = 'cell infected';
+        infectedCell.textContent = '✕';
+        infectedCell.onclick = () => {
+          if (!running) return;
+          lives -= 1;
+          render();
+          if (lives === 0) {
+            endGame('Game over! The infection spread.');
+          } else {
+            spawnTargets();
+            scheduleSpawn();
+          }
+        };
+      }
+
+      function scheduleSpawn() {
+        if (!running) return;
+        if (gameLoop) clearTimeout(gameLoop);
+        gameLoop = setTimeout(() => {
+          spawnTargets();
+          scheduleSpawn();
+        }, 900);
+      }
+
+      function endGame(message) {
+        running = false;
+        if (gameLoop) clearTimeout(gameLoop);
+        if (timerLoop) clearInterval(timerLoop);
+        clearTypes();
+        statusEl.textContent = `${message} Final score: ${score}.`;
+      }
+
+      function startGame() {
+        running = true;
+        score = 0;
+        lives = 3;
+        timeLeft = 30;
+        render();
+        statusEl.textContent = 'Game in progress...';
+        spawnTargets();
+        if (gameLoop) clearTimeout(gameLoop);
+        if (timerLoop) clearInterval(timerLoop);
+        scheduleSpawn();
+        timerLoop = setInterval(() => {
+          timeLeft -= 1;
+          render();
+          if (timeLeft <= 0) {
+            endGame('Time up!');
+          }
+        }, 1000);
+      }
+
+      for (let i = 0; i < size; i += 1) makeCell();
+      render();
+      startBtn.addEventListener('click', startGame);
+    </script>
+  </body>
+</html>
