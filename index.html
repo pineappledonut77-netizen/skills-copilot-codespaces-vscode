@@ -139,6 +139,7 @@
           score += 1;
           render();
           spawnTargets();
+          scheduleSpawn();
         };
 
         const infectedCell = cells[infectedIndex];
@@ -148,17 +149,27 @@
           if (!running) return;
           lives -= 1;
           render();
-          if (lives <= 0) {
+          if (lives === 0) {
             endGame('Game over! The infection spread.');
           } else {
             spawnTargets();
+            scheduleSpawn();
           }
         };
       }
 
+      function scheduleSpawn() {
+        if (!running) return;
+        if (gameLoop) clearTimeout(gameLoop);
+        gameLoop = setTimeout(() => {
+          spawnTargets();
+          scheduleSpawn();
+        }, 900);
+      }
+
       function endGame(message) {
         running = false;
-        if (gameLoop) clearInterval(gameLoop);
+        if (gameLoop) clearTimeout(gameLoop);
         if (timerLoop) clearInterval(timerLoop);
         clearTypes();
         statusEl.textContent = `${message} Final score: ${score}.`;
@@ -172,9 +183,9 @@
         render();
         statusEl.textContent = 'Game in progress...';
         spawnTargets();
-        if (gameLoop) clearInterval(gameLoop);
+        if (gameLoop) clearTimeout(gameLoop);
         if (timerLoop) clearInterval(timerLoop);
-        gameLoop = setInterval(spawnTargets, 900);
+        scheduleSpawn();
         timerLoop = setInterval(() => {
           timeLeft -= 1;
           render();
