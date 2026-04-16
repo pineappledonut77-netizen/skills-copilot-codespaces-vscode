@@ -96,8 +96,8 @@
       let score = 0;
       let lives = 3;
       let timeLeft = 30;
-      let gameLoop;
-      let timerLoop;
+      let gameLoop = null;
+      let timerLoop = null;
       let running = false;
 
       function makeCell() {
@@ -127,7 +127,9 @@
         clearTypes();
         const healthyIndex = Math.floor(Math.random() * size);
         let infectedIndex = Math.floor(Math.random() * size);
-        if (infectedIndex === healthyIndex) infectedIndex = (infectedIndex + 1) % size;
+        while (infectedIndex === healthyIndex) {
+          infectedIndex = Math.floor(Math.random() * size);
+        }
 
         const healthyCell = cells[healthyIndex];
         healthyCell.className = 'cell healthy';
@@ -156,8 +158,8 @@
 
       function endGame(message) {
         running = false;
-        clearInterval(gameLoop);
-        clearInterval(timerLoop);
+        if (gameLoop) clearInterval(gameLoop);
+        if (timerLoop) clearInterval(timerLoop);
         clearTypes();
         statusEl.textContent = `${message} Final score: ${score}.`;
       }
@@ -170,8 +172,8 @@
         render();
         statusEl.textContent = 'Game in progress...';
         spawnTargets();
-        clearInterval(gameLoop);
-        clearInterval(timerLoop);
+        if (gameLoop) clearInterval(gameLoop);
+        if (timerLoop) clearInterval(timerLoop);
         gameLoop = setInterval(spawnTargets, 900);
         timerLoop = setInterval(() => {
           timeLeft -= 1;
